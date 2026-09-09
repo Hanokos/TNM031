@@ -8,53 +8,42 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        // ---------------------------------------------------------
         // 1. KEY GENERATION
-        // ---------------------------------------------------------
+        SecureRandom random = new SecureRandom(); // source of randomness
 
-        SecureRandom random = new SecureRandom();
-
-        // Generate two large prime numbers p and q.
+        // Generate two large random prime numbers p and q.
         // 512 bits each gives us a modulus n of approximately 1024 bits.
         BigInteger p = BigInteger.probablePrime(512, random);
         BigInteger q = BigInteger.probablePrime(512, random);
 
-        // n = p * q
+        // calc: n = p * q
         BigInteger n = p.multiply(q);
 
-        // phi(n) = (p - 1)(q - 1)
-        BigInteger phi = p.subtract(BigInteger.ONE)
-                          .multiply(q.subtract(BigInteger.ONE));
+        // calc:  phi(n) = (p - 1)(q - 1)
+        BigInteger phi = p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE));
 
-        // Choose the public encryption exponent e.
-        // 65537 is a commonly used value for e.
-        BigInteger e = BigInteger.valueOf(65537);
+        // the public encryption exponent e.
+        BigInteger e = BigInteger.valueOf(9007);
 
-        // e must be relatively prime to phi(n).
+        // e must be compatible phi(n) so that we can find d.
         // If gcd(e, phi) != 1, generate new primes.
         while (!e.gcd(phi).equals(BigInteger.ONE)) {
 
             p = BigInteger.probablePrime(512, random);
             q = BigInteger.probablePrime(512, random);
-
             n = p.multiply(q);
-
-            phi = p.subtract(BigInteger.ONE)
-                   .multiply(q.subtract(BigInteger.ONE));
+            phi = p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE));
         }
 
         // Calculate the private exponent d.
         // d is the modular inverse of e modulo phi(n).
-        //
-        // This means:
+
         // d * e ≡ 1 (mod phi(n))
         BigInteger d = e.modInverse(phi);
 
+        // (n,e) = public key, (n,d) = private key
 
-        // ---------------------------------------------------------
         // 2. DISPLAY THE KEYS
-        // ---------------------------------------------------------
-
         System.out.println("===== RSA KEY GENERATION =====");
 
         System.out.println("Public key:");
@@ -68,31 +57,27 @@ public class Main {
         System.out.println("d = " + d);
 
 
-        // ---------------------------------------------------------
-        // 3. READ A MESSAGE FROM THE USER
-        // ---------------------------------------------------------
 
-        BufferedReader reader =
-                new BufferedReader(new InputStreamReader(System.in));
+        // 3. READ A MESSAGE FROM THE USER
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
         System.out.println();
         System.out.print("Enter a message to encrypt: ");
 
-        String input = reader.readLine();
+        String input = reader.readLine(); // user message input
 
 
-        // ---------------------------------------------------------
+
         // 4. CONVERT THE MESSAGE INTO A BIGINTEGER
-        // ---------------------------------------------------------
 
         // Convert the String into bytes and then into a BigInteger.
-        //
-        // The "1" tells BigInteger that the number should be
-        // interpreted as positive.
+        // The 1 tells BigInteger that the number should be positive.
         BigInteger message = new BigInteger(
                 1,
                 input.getBytes(StandardCharsets.UTF_8)
         );
+
+
 
         // RSA requires the message number to be smaller than n.
         if (message.compareTo(n) >= 0) {
@@ -102,15 +87,10 @@ public class Main {
         }
 
 
-        // ---------------------------------------------------------
+   
         // 5. ENCRYPTION
-        // ---------------------------------------------------------
-
-        // RSA encryption:
-        //
-        // c = m^e mod n
-        //
-        // BigInteger.modPow() performs this efficiently.
+        // RSA encryption formula: c = m^e mod n
+        // BigInteger.modPow() performs this
         BigInteger ciphertext = message.modPow(e, n);
 
         System.out.println();
@@ -120,26 +100,14 @@ public class Main {
         System.out.println("Ciphertext: " + ciphertext);
 
 
-        // ---------------------------------------------------------
         // 6. DECRYPTION
-        // ---------------------------------------------------------
-
-        // RSA decryption:
-        //
-        // m = c^d mod n
-        //
-        // Again, modPow() performs modular exponentiation efficiently.
+        // RSA decryption: m = c^d mod n
+        // Again, modPow() performs this
         BigInteger decryptedMessage = ciphertext.modPow(d, n);
 
 
-        // ---------------------------------------------------------
-        // 7. CONVERT THE DECRYPTED BIGINTEGER BACK INTO A STRING
-        // ---------------------------------------------------------
-
-        String decryptedText = new String(
-                decryptedMessage.toByteArray(),
-                StandardCharsets.UTF_8
-        );
+        // 7. CONVERT  DECRYPTED BIGINTEGER BACK INTO A STRING
+        String decryptedText = new String( decryptedMessage.toByteArray(), StandardCharsets.UTF_8);
 
         System.out.println();
         System.out.println("===== DECRYPTION =====");
@@ -147,10 +115,7 @@ public class Main {
         System.out.println("Decrypted message: " + decryptedText);
 
 
-        // ---------------------------------------------------------
-        // 8. CHECK THAT ENCRYPTION/DECRYPTION WORKED
-        // ---------------------------------------------------------
-
+        // 8. CHECK ENCRYPTION/DECRYPTION WORKED
         System.out.println();
 
         if (input.equals(decryptedText)) {
